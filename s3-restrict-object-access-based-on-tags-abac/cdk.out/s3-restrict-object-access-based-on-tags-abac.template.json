@@ -1,0 +1,1224 @@
+{
+  "Resources": {
+    "abacBucket74625259": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicPolicy": true
+        },
+        "Tags": [
+          {
+            "Key": "Owner",
+            "Value": "Mystique"
+          },
+          {
+            "Key": "OwnerProfile",
+            "Value": "https://github.com/miztiik"
+          },
+          {
+            "Key": "ToKnowMore",
+            "Value": "https://youtube.com/c/valaxytechnologies"
+          }
+        ],
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        }
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/abacBucket/Resource"
+      }
+    },
+    "abacBucketPolicy1F4FFB24": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "abacBucket74625259"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":root"
+                    ]
+                  ]
+                }
+              },
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "abacBucket74625259",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/abacBucket/Policy/Resource"
+      }
+    },
+    "redRosyNewPasswordGeneratorCF32457D": {
+      "Type": "AWS::CloudFormation::CustomResource",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95FD065624",
+            "Arn"
+          ]
+        },
+        "Length": 20
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/redRosyNewPasswordGenerator/Resource/Default"
+      }
+    },
+    "SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95ServiceRole28C8B767": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Owner",
+            "Value": "Mystique"
+          },
+          {
+            "Key": "OwnerProfile",
+            "Value": "https://github.com/miztiik"
+          },
+          {
+            "Key": "ToKnowMore",
+            "Value": "https://youtube.com/c/valaxytechnologies"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95/ServiceRole/Resource"
+      }
+    },
+    "SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95FD065624": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "import boto3\nimport random\nimport string\nimport logging as log\nimport cfnresponse\n\nlog.getLogger().setLevel(log.INFO)\n\n\"\"\"\nIf included in a Cloudformation build as a CustomResource, \ngenerate a random string of length given by the 'length' parameter. Defaults to 20\nBy default the character set used is upper and lowercase ascii letters plus digits.\n\"\"\"\n\ndef lambda_handler(event, context):\n\n    log.info(f\"Input event: {event}\")\n    length = 20\n    punctuation = False\n    rds_compatible = False\n\n    physical_id = \"random_string_generator\"\n\n    attributes = {\n            \"random_string\": \"\",\n            \"message\":\"\"\n        }\n\n    try:\n        # Check if this is a Create and we're failing Creates\n        if event['RequestType'] == 'Create' and event['ResourceProperties'].get('FailCreate', False):\n            raise RuntimeError('Create failure requested')\n\n        length = int(event['ResourceProperties'].get('Length', 20))\n        punctuation = event['ResourceProperties'].get('Punctuation',False)\n        rds_compatible = event['ResourceProperties'].get('RDSCompatible',False)\n\n        valid_characters = string.ascii_letters+string.digits\n\n        if punctuation not in [False,'false','False']:\n            valid_characters = valid_characters + string.punctuation\n        if rds_compatible not in [False,'false','False']:\n            valid_characters = valid_characters.translate(None,'@/\"')\n\n        random_string = ''.join(random.choice(valid_characters) for i in range(length))\n        attributes[\"random_string\"] = random_string\n        attributes[\"message\"]= \"Successfully generated a random string\"\n\n        attributes = {\n            'Response': f\"{random_string}\"\n        }\n        cfnresponse.send(event, context, cfnresponse.SUCCESS, attributes, physical_id)\n    except Exception as e:\n        log.exception(e)\n        # cfnresponse's error message is always \"see CloudWatch\"\n        cfnresponse.send(event, context, cfnresponse.FAILED, {}, physical_id)"
+        },
+        "Handler": "index.lambda_handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95ServiceRole28C8B767",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.7",
+        "Tags": [
+          {
+            "Key": "Owner",
+            "Value": "Mystique"
+          },
+          {
+            "Key": "OwnerProfile",
+            "Value": "https://github.com/miztiik"
+          },
+          {
+            "Key": "ToKnowMore",
+            "Value": "https://youtube.com/c/valaxytechnologies"
+          }
+        ],
+        "Timeout": 300
+      },
+      "DependsOn": [
+        "SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95ServiceRole28C8B767"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95/Resource"
+      }
+    },
+    "redRosyD30E8CCC": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "Groups": [
+          {
+            "Ref": "teamUnicorn7A4EE641"
+          }
+        ],
+        "LoginProfile": {
+          "Password": {
+            "Fn::GetAtt": [
+              "redRosyNewPasswordGeneratorCF32457D",
+              "Response"
+            ]
+          }
+        },
+        "UserName": "redRosy"
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/redRosy/Resource"
+      }
+    },
+    "blueBobNewPasswordGenerator4743B88E": {
+      "Type": "AWS::CloudFormation::CustomResource",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95FD065624",
+            "Arn"
+          ]
+        },
+        "Length": 20
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/blueBobNewPasswordGenerator/Resource/Default"
+      }
+    },
+    "blueBob3B5312E7": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "Groups": [
+          {
+            "Ref": "teamUnicorn7A4EE641"
+          }
+        ],
+        "LoginProfile": {
+          "Password": {
+            "Fn::GetAtt": [
+              "blueBobNewPasswordGenerator4743B88E",
+              "Response"
+            ]
+          }
+        },
+        "UserName": "blueBob"
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/blueBob/Resource"
+      }
+    },
+    "annoyingAdminNewPasswordGenerator0BB97593": {
+      "Type": "AWS::CloudFormation::CustomResource",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "SingletonLambdaRANDOMF2F7DB4561B7AC4C9730D10E95FD065624",
+            "Arn"
+          ]
+        },
+        "Length": 20
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/annoyingAdminNewPasswordGenerator/Resource/Default"
+      }
+    },
+    "annoyingAdminF29DD1CF": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "Groups": [
+          {
+            "Ref": "teamUnicorn7A4EE641"
+          }
+        ],
+        "LoginProfile": {
+          "Password": {
+            "Fn::GetAtt": [
+              "annoyingAdminNewPasswordGenerator0BB97593",
+              "Response"
+            ]
+          }
+        },
+        "UserName": "annoyingAdmin"
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/annoyingAdmin/Resource"
+      }
+    },
+    "teamUnicorn7A4EE641": {
+      "Type": "AWS::IAM::Group",
+      "Properties": {
+        "GroupName": "teamUnicorn"
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/teamUnicorn/Resource"
+      }
+    },
+    "teamUnicornDefaultPolicy7E297529": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Condition": {
+                "StringEquals": {
+                  "iam:ResourceTag/teamName": "${aws:PrincipalTag/teamName}",
+                  "iam:ResourceTag/projectName": "${aws:PrincipalTag/projectName}"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:iam::",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":role/teamUnicornProject*"
+                  ]
+                ]
+              },
+              "Sid": "AllowGroupMembersToAssumeRoleMatchingTeamName"
+            },
+            {
+              "Action": "sts:AssumeRole",
+              "Condition": {
+                "StringEquals": {
+                  "iam:ResourceTag/teamName": "${aws:PrincipalTag/teamName}",
+                  "iam:ResourceTag/teamAdmin": "yes"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:iam::",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":role/teamUnicornTeamAdminRole"
+                  ]
+                ]
+              },
+              "Sid": "AllowTeamAdminToAssumeRoleMatchingTeamName"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "teamUnicornDefaultPolicy7E297529",
+        "Groups": [
+          {
+            "Ref": "teamUnicorn7A4EE641"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/teamUnicorn/DefaultPolicy/Resource"
+      }
+    },
+    "iamTagger9FA1A227": {
+      "Type": "AWS::CloudFormation::CustomResource",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "SingletonLambdatagger304ee111e89c2dfa7ae01bbebc3856A8DC",
+            "Arn"
+          ]
+        },
+        "Message": [
+          {
+            "user": {
+              "Ref": "redRosyD30E8CCC"
+            },
+            "tags": [
+              {
+                "Key": "teamName",
+                "Value": "teamUnicorn"
+              },
+              {
+                "Key": "projectName",
+                "Value": "projectRed"
+              }
+            ]
+          },
+          {
+            "user": {
+              "Ref": "blueBob3B5312E7"
+            },
+            "tags": [
+              {
+                "Key": "teamName",
+                "Value": "teamUnicorn"
+              },
+              {
+                "Key": "projectName",
+                "Value": "projectBlue"
+              }
+            ]
+          },
+          {
+            "user": {
+              "Ref": "annoyingAdminF29DD1CF"
+            },
+            "tags": [
+              {
+                "Key": "teamName",
+                "Value": "teamUnicorn"
+              },
+              {
+                "Key": "teamAdmin",
+                "Value": "yes"
+              }
+            ]
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/iamTagger/Resource/Default"
+      }
+    },
+    "SingletonLambdatagger304ee111e89c2dfa7ae01bbebcServiceRoleA954E0E8": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Owner",
+            "Value": "Mystique"
+          },
+          {
+            "Key": "OwnerProfile",
+            "Value": "https://github.com/miztiik"
+          },
+          {
+            "Key": "ToKnowMore",
+            "Value": "https://youtube.com/c/valaxytechnologies"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/SingletonLambdatagger304ee111e89c2dfa7ae01bbebc/ServiceRole/Resource"
+      }
+    },
+    "SingletonLambdatagger304ee111e89c2dfa7ae01bbebcServiceRoleDefaultPolicy8CD731AD": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "iam:TagUser",
+                "iam:UntagUser"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "SingletonLambdatagger304ee111e89c2dfa7ae01bbebcServiceRoleDefaultPolicy8CD731AD",
+        "Roles": [
+          {
+            "Ref": "SingletonLambdatagger304ee111e89c2dfa7ae01bbebcServiceRoleA954E0E8"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/SingletonLambdatagger304ee111e89c2dfa7ae01bbebc/ServiceRole/DefaultPolicy/Resource"
+      }
+    },
+    "SingletonLambdatagger304ee111e89c2dfa7ae01bbebc3856A8DC": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "def lambda_handler(event, context):\n    import logging as log\n    import cfnresponse\n    import boto3\n    log.getLogger().setLevel(log.INFO)\n\n    # This needs to change if there are to be multiple resources\n    # in the same stack\n    physical_id = 'TheOnlyCustomResource'\n\n    try:\n        log.info('Input event: %s', event)\n\n        # Check if this is a Create and we're failing Creates\n        if event['RequestType'] == 'Create' and event['ResourceProperties'].get('FailCreate', False):\n            raise RuntimeError('Create failure requested')\n\n        # Do the thing\n        # OriginalCode\n        message = event['ResourceProperties']['Message']\n\n        #MINE\n        iam = boto3.client('iam')\n        for i in message:\n            if i.get('tags'):\n                iam.tag_user(\n                    UserName=i.get('user'),\n                    Tags=i.get('tags')\n                )\n        #MINE\n\n        attributes = {\n            'Response': f\"Message sent from function {message}\"\n        }\n\n        cfnresponse.send(event, context, cfnresponse.SUCCESS, attributes, physical_id)\n    except Exception as e:\n        log.exception(e)\n        # cfnresponse's error message is always \"see CloudWatch\"\n        cfnresponse.send(event, context, cfnresponse.FAILED, {}, physical_id)"
+        },
+        "Handler": "index.lambda_handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "SingletonLambdatagger304ee111e89c2dfa7ae01bbebcServiceRoleA954E0E8",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.7",
+        "Tags": [
+          {
+            "Key": "Owner",
+            "Value": "Mystique"
+          },
+          {
+            "Key": "OwnerProfile",
+            "Value": "https://github.com/miztiik"
+          },
+          {
+            "Key": "ToKnowMore",
+            "Value": "https://youtube.com/c/valaxytechnologies"
+          }
+        ],
+        "Timeout": 300
+      },
+      "DependsOn": [
+        "SingletonLambdatagger304ee111e89c2dfa7ae01bbebcServiceRoleDefaultPolicy8CD731AD",
+        "SingletonLambdatagger304ee111e89c2dfa7ae01bbebcServiceRoleA954E0E8"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/SingletonLambdatagger304ee111e89c2dfa7ae01bbebc/Resource"
+      }
+    },
+    "teamUnicornProjectRedRoleIdDD950183": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":root"
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "RoleName": "teamUnicornProjectRedRole",
+        "Tags": [
+          {
+            "Key": "Owner",
+            "Value": "Mystique"
+          },
+          {
+            "Key": "OwnerProfile",
+            "Value": "https://github.com/miztiik"
+          },
+          {
+            "Key": "ToKnowMore",
+            "Value": "https://youtube.com/c/valaxytechnologies"
+          },
+          {
+            "Key": "teamName",
+            "Value": "teamUnicorn"
+          },
+          {
+            "Key": "projectName",
+            "Value": "projectRed"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/teamUnicornProjectRedRoleId/Resource"
+      }
+    },
+    "teamUnicornProjectRedRoleIdDefaultPolicyD37AA14A": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:ListAllMyBuckets",
+                "s3:HeadBucket"
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+              "Sid": "AllowGroupToSeeBucketListInTheConsole"
+            },
+            {
+              "Action": [
+                "s3:ListBucket",
+                "s3:ListBucketVersions"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "abacBucket74625259",
+                  "Arn"
+                ]
+              },
+              "Sid": "AllowRootLevelListingOfBucket"
+            },
+            {
+              "Action": [
+                "s3:Get*",
+                "s3:DeleteObjectTagging"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "s3:ExistingObjectTag/teamName": "${aws:PrincipalTag/teamName}",
+                  "s3:ExistingObjectTag/projectName": "${aws:PrincipalTag/projectName}"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "abacBucket74625259",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              },
+              "Sid": "ReadOnlyAccessToTeams"
+            },
+            {
+              "Action": [
+                "s3:PutObject",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "s3:RequestObjectTag/teamName": "${aws:PrincipalTag/teamName}",
+                  "s3:RequestObjectTag/projectName": "${aws:PrincipalTag/projectName}"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "abacBucket74625259",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              },
+              "Sid": "WriteTaggedObjectOwnedByThem"
+            },
+            {
+              "Action": "s3:*",
+              "Condition": {
+                "StringEquals": {
+                  "${aws:PrincipalTag/teamAdmin}": [
+                    "yes"
+                  ]
+                }
+              },
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "abacBucket74625259",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "abacBucket74625259",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ],
+              "Sid": "FullAccessToAdminsFromSameTeam"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "teamUnicornProjectRedRoleIdDefaultPolicyD37AA14A",
+        "Roles": [
+          {
+            "Ref": "teamUnicornProjectRedRoleIdDD950183"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/teamUnicornProjectRedRoleId/DefaultPolicy/Resource"
+      }
+    },
+    "teamUnicornProjectBlueRoleId9A53C68A": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":root"
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "RoleName": "teamUnicornProjectBlueRole",
+        "Tags": [
+          {
+            "Key": "Owner",
+            "Value": "Mystique"
+          },
+          {
+            "Key": "OwnerProfile",
+            "Value": "https://github.com/miztiik"
+          },
+          {
+            "Key": "ToKnowMore",
+            "Value": "https://youtube.com/c/valaxytechnologies"
+          },
+          {
+            "Key": "teamName",
+            "Value": "teamUnicorn"
+          },
+          {
+            "Key": "projectName",
+            "Value": "projectBlue"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/teamUnicornProjectBlueRoleId/Resource"
+      }
+    },
+    "teamUnicornProjectBlueRoleIdDefaultPolicy65AAC2CA": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:ListAllMyBuckets",
+                "s3:HeadBucket"
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+              "Sid": "AllowGroupToSeeBucketListInTheConsole"
+            },
+            {
+              "Action": [
+                "s3:ListBucket",
+                "s3:ListBucketVersions"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "abacBucket74625259",
+                  "Arn"
+                ]
+              },
+              "Sid": "AllowRootLevelListingOfBucket"
+            },
+            {
+              "Action": [
+                "s3:Get*",
+                "s3:DeleteObjectTagging"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "s3:ExistingObjectTag/teamName": "${aws:PrincipalTag/teamName}",
+                  "s3:ExistingObjectTag/projectName": "${aws:PrincipalTag/projectName}"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "abacBucket74625259",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              },
+              "Sid": "ReadOnlyAccessToTeams"
+            },
+            {
+              "Action": [
+                "s3:PutObject",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "s3:RequestObjectTag/teamName": "${aws:PrincipalTag/teamName}",
+                  "s3:RequestObjectTag/projectName": "${aws:PrincipalTag/projectName}"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "abacBucket74625259",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              },
+              "Sid": "WriteTaggedObjectOwnedByThem"
+            },
+            {
+              "Action": "s3:*",
+              "Condition": {
+                "StringEquals": {
+                  "${aws:PrincipalTag/teamAdmin}": [
+                    "yes"
+                  ]
+                }
+              },
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "abacBucket74625259",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "abacBucket74625259",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ],
+              "Sid": "FullAccessToAdminsFromSameTeam"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "teamUnicornProjectBlueRoleIdDefaultPolicy65AAC2CA",
+        "Roles": [
+          {
+            "Ref": "teamUnicornProjectBlueRoleId9A53C68A"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/teamUnicornProjectBlueRoleId/DefaultPolicy/Resource"
+      }
+    },
+    "teamUnicornTeamAdminRoleId92591294": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":root"
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "RoleName": "teamUnicornTeamAdminRole",
+        "Tags": [
+          {
+            "Key": "Owner",
+            "Value": "Mystique"
+          },
+          {
+            "Key": "OwnerProfile",
+            "Value": "https://github.com/miztiik"
+          },
+          {
+            "Key": "ToKnowMore",
+            "Value": "https://youtube.com/c/valaxytechnologies"
+          },
+          {
+            "Key": "teamName",
+            "Value": "teamUnicorn"
+          },
+          {
+            "Key": "teamAdmin",
+            "Value": "yes"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/teamUnicornTeamAdminRoleId/Resource"
+      }
+    },
+    "teamUnicornTeamAdminRoleIdDefaultPolicyB0F4D63C": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:ListAllMyBuckets",
+                "s3:HeadBucket"
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+              "Sid": "AllowGroupToSeeBucketListInTheConsole"
+            },
+            {
+              "Action": [
+                "s3:ListBucket",
+                "s3:ListBucketVersions"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "abacBucket74625259",
+                  "Arn"
+                ]
+              },
+              "Sid": "AllowRootLevelListingOfBucket"
+            },
+            {
+              "Action": [
+                "s3:Get*",
+                "s3:DeleteObjectTagging"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "s3:ExistingObjectTag/teamName": "${aws:PrincipalTag/teamName}",
+                  "s3:ExistingObjectTag/projectName": "${aws:PrincipalTag/projectName}"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "abacBucket74625259",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              },
+              "Sid": "ReadOnlyAccessToTeams"
+            },
+            {
+              "Action": [
+                "s3:PutObject",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "s3:RequestObjectTag/teamName": "${aws:PrincipalTag/teamName}",
+                  "s3:RequestObjectTag/projectName": "${aws:PrincipalTag/projectName}"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "abacBucket74625259",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              },
+              "Sid": "WriteTaggedObjectOwnedByThem"
+            },
+            {
+              "Action": "s3:*",
+              "Condition": {
+                "StringEquals": {
+                  "${aws:PrincipalTag/teamAdmin}": [
+                    "yes"
+                  ]
+                }
+              },
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "abacBucket74625259",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "abacBucket74625259",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ],
+              "Sid": "FullAccessToAdminsFromSameTeam"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "teamUnicornTeamAdminRoleIdDefaultPolicyB0F4D63C",
+        "Roles": [
+          {
+            "Ref": "teamUnicornTeamAdminRoleId92591294"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "s3-restrict-object-access-based-on-tags-abac/teamUnicornTeamAdminRoleId/DefaultPolicy/Resource"
+      }
+    }
+  },
+  "Outputs": {
+    "SecuirtyAutomationFrom": {
+      "Description": "To know more about this automation stack, check out our github page.",
+      "Value": "https://github.com/miztiik/dev-sec-ops/tree/master/s3-restrict-object-access-based-on-tags-abac"
+    },
+    "UserredRosy": {
+      "Description": "Red Rosy User Password",
+      "Value": {
+        "Fn::GetAtt": [
+          "redRosyNewPasswordGeneratorCF32457D",
+          "Response"
+        ]
+      }
+    },
+    "UserblueBob": {
+      "Description": "Red Rosy User Password",
+      "Value": {
+        "Fn::GetAtt": [
+          "blueBobNewPasswordGenerator4743B88E",
+          "Response"
+        ]
+      }
+    },
+    "UserannoyingAdmin": {
+      "Description": "Red Rosy User Password",
+      "Value": {
+        "Fn::GetAtt": [
+          "annoyingAdminNewPasswordGenerator0BB97593",
+          "Response"
+        ]
+      }
+    },
+    "SecurePrivateBucket": {
+      "Description": "S3 Bucket to Test ABAC",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://console.aws.amazon.com/s3/buckets/",
+            {
+              "Ref": "abacBucket74625259"
+            }
+          ]
+        ]
+      }
+    },
+    "RosyAssumeRedRoleUrl": {
+      "Description": "The URL for Rosy to assume teamRed Role",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://signin.aws.amazon.com/switchrole?roleName=",
+            {
+              "Ref": "teamUnicornProjectRedRoleIdDD950183"
+            },
+            "&account=",
+            {
+              "Ref": "AWS::AccountId"
+            }
+          ]
+        ]
+      }
+    },
+    "blueBobAssumeRedRoleUrl": {
+      "Description": "The URL for Bob to assume teamBlue Role",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://signin.aws.amazon.com/switchrole?roleName=",
+            {
+              "Ref": "teamUnicornProjectBlueRoleId9A53C68A"
+            },
+            "&account=",
+            {
+              "Ref": "AWS::AccountId"
+            }
+          ]
+        ]
+      }
+    },
+    "SampleS3UploadCommands": {
+      "Description": "For ProjectRed",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "aws s3api put-object-tagging --bucket ",
+            {
+              "Ref": "abacBucket74625259"
+            },
+            " --key YOUR-OBJECT --tagging 'TagSet=[{Key=projectName,Value=teamRed}]'"
+          ]
+        ]
+      }
+    },
+    "UserLoginUrl": {
+      "Description": "The URL for Rosy to assume teamRed Role",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "AWS::AccountId"
+            },
+            ".signin.aws.amazon.com/console"
+          ]
+        ]
+      }
+    }
+  }
+}
