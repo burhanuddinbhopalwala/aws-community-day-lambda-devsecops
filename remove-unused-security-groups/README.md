@@ -5,7 +5,7 @@ Maintaining security groups across multiple VPCs, regions, accounts is quite an 
 
 ![Automatically removed unused old security groups](images/miztiik_automatically_remove_security_groups.png)
 
-Follow this article in **[Udemy][101]**
+Follow this article in **[][101]**
 
 ## Lambda Functionality
 
@@ -36,7 +36,7 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 
 ## 📌 Who is using this
 
-This Udemy [course][101] uses this repository extensively to teach advanced AWS Cloud Security to new developers, Solution Architects & Ops Engineers in AWS.
+This  [course][101] uses this repository extensively to teach advanced AWS Cloud Security to new developers, Solution Architects & Ops Engineers in AWS.
 
 ### 💡 Help/Suggestions or 🐛 Bugs
 
@@ -52,8 +52,8 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 
 [1]: https://github.com/miztiik/serverless-janitor-for-security-groups
 
-[101]: https://www.udemy.com/course/aws-cloud-security-proactive-way/?referralCode=71DC542AD4481309A441
+[101]: https://www..com/course/aws-cloud-security-proactive-way/?referralCode=71DC542AD4481309A441
 
 [200]: https://github.com/miztiik/dev-sec-ops/issues
 
-[899]: https://www.udemy.com/user/n-kumar/
+[899]: https://www..com/user/n-kumar/

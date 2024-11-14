@@ -2,7 +2,7 @@
 
 Limiting outbound traffic to trusted domains (called `whitelisting`) prevent instances from downloading malware, communicating with bot networks.  You will learn how to limit outbound web connections from your VPC to the internet, using a web proxy with custom domain whitelists or DNS content filtering services.
 
-Follow this article in **[Udemy][101]**
+Follow this article in **[][101]**
 
 ![AWS Security](images/domain-whitelisting.png)
 
@@ -58,7 +58,7 @@ Follow this article in **[Udemy][101]**
 
 ## 📌 Who is using this
 
-This Udemy [course][101] uses this repository extensively to teach advanced AWS Cloud Security to new developers, Solution Architects & Ops Engineers in AWS.
+This  [course][101] uses this repository extensively to teach advanced AWS Cloud Security to new developers, Solution Architects & Ops Engineers in AWS.
 
 ### 💡 Help/Suggestions or 🐛 Bugs
 
@@ -78,16 +78,16 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 
 [2]: http://www.squid-cache.org/
 
-[100]: https://www.udemy.com/course/aws-cloud-security/?referralCode=B7F1B6C78B45ADAF77A9
+[100]: https://www..com/course/aws-cloud-security/?referralCode=B7F1B6C78B45ADAF77A9
 
-[101]: https://www.udemy.com/course/aws-cloud-security-proactive-way/?referralCode=71DC542AD4481309A441
+[101]: https://www..com/course/aws-cloud-security-proactive-way/?referralCode=71DC542AD4481309A441
 
-[102]: https://www.udemy.com/course/aws-cloud-development-kit-from-beginner-to-professional/?referralCode=E15D7FB64E417C547579
+[102]: https://www..com/course/aws-cloud-development-kit-from-beginner-to-professional/?referralCode=E15D7FB64E417C547579
 
-[103]: https://www.udemy.com/course/aws-cloudformation-basics?referralCode=93AD3B1530BC871093D6
+[103]: https://www..com/course/aws-cloudformation-basics?referralCode=93AD3B1530BC871093D6
 
 [200]: https://github.com/miztiik/dev-sec-ops/issues
 
-[899]: https://www.udemy.com/user/n-kumar/
+[899]: https://www..com/user/n-kumar/
 
 [900]: https://ko-fi.com/miztiik
